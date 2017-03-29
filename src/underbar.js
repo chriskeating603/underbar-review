@@ -98,9 +98,13 @@
 
   // Produce a duplicate-free version of the array.
   _.uniq = function(array) {
-    return _.filter(array, function(item, index) {
-      return index <= array.indexOf(item);
+    var results = [];
+    _.each(array, function(item) {
+      if (results.indexOf(item) === -1) {
+        results.push(item);
+      }
     });
+    return results;
   };
 
 
@@ -109,6 +113,11 @@
     // map() is a useful primitive iteration function that works a lot
     // like each(), but in addition to running the operation on all
     // the members, it also maintains an array of results.
+    var results = [];
+    _.each(collection, function(item) {
+      results.push(iterator(item));
+    });
+    return results;
   };
 
   /*
@@ -150,6 +159,30 @@
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
+    if (Array.isArray(collection)) {
+      var acc = accumulator || collection[0];
+    } else {
+      if (accumulator !== undefined) {
+        var acc = accumulator;
+      } else {
+        var acc = collection[Object.keys(collection)[0]];
+      }
+    }
+
+     if (Array.isArray(collection) === true) {
+      var args = Array.prototype.slice.call(arguments);
+      var acc = arguments.length >= 3 ? args[2] : collection[0];
+      var i = arguments.length >= 3 ? 0 : 1;
+      for (i; i < collection.length; i++) {
+        acc = iterator(acc, collection[i]);
+      }
+      return acc;
+    } else {
+      for (var key in collection) {
+        acc = iterator(acc, collection[key]);
+        }
+       return acc;
+     }
   };
 
   // Determine if the array or object contains a given value (using `===`).
@@ -157,7 +190,7 @@
     // TIP: Many iteration problems can be most easily expressed in
     // terms of reduce(). Here's a freebie to demonstrate!
     return _.reduce(collection, function(wasFound, item) {
-      if (wasFound) {
+      if (wasFound) {             
         return true;
       }
       return item === target;
@@ -168,12 +201,41 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    return _.reduce(collection, function(didPass, item) {
+      if (!didPass) {
+        return false;
+      }
+      if (iterator === undefined) {
+        iterator = _.identity;
+      }
+      if (iterator(item)) {
+        return true;
+      } else {
+        return false;
+      }
+    }, true);
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
+    return _.reduce(collection, function(didPass, item) {
+      if (didPass) {
+        return true;
+      }
+      if (iterator === undefined) {
+        iterator = _.identity;
+      }
+      if (iterator(item)) {
+        return true;
+      } else {
+        return false;
+      }
+    }, false);
     // TIP: There's a very clever way to re-use every() here.
+    //prove not iterator(every item) in the array is equal to false
+    //var i = _.every(collection, iterator)
+    //debugger;
   };
 
 
@@ -196,11 +258,27 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    var args = Array.prototype.slice.call(arguments);
+    for (var i = 1; i < args.length; i++) {
+      for (var key in args[i]) {
+        obj[key] = args[i][key];
+      }
+    }
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+  var args = Array.prototype.slice.call(arguments);
+    for (var i = 1; i < args.length; i++) {
+      for (var key in args[i]) {
+        if (!obj.hasOwnProperty(key)) {
+          obj[key] = args[i][key];
+        }
+      }
+    }
+    return obj;
   };
 
 
@@ -240,10 +318,18 @@
   // memoize could be renamed to oncePerUniqueArgumentList; memoize does the
   // same thing as once, but based on many sets of unique arguments.
   //
-  // _.memoize should return a function that, when called, will check if it has
+  // _.memoize should return a function that, when called, will check if it haschange
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    var results = {};
+    return function () {
+      var keyString = JSON.stringify(arguments);
+      if (!results.hasOwnProperty(keyString)) {
+        results[keyString] = func.apply(this, arguments);
+      } 
+      return results[keyString];
+    }
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -253,6 +339,10 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    var args = Array.prototype.slice.call(arguments,2);
+    setTimeout(function () {
+      func.apply(this,args);
+    },wait);
   };
 
 
@@ -267,6 +357,15 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    var copy = [];
+    for (var i = 0; i < array.length; i++) {
+      if (Math.random() < 0.5) {
+        copy.push(array[i]);
+      } else {
+        copy.unshift(array[i]);
+      }
+    }
+    return copy;
   };
 
 
